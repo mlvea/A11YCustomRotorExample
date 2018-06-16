@@ -55,10 +55,15 @@ class POIListViewController: UITableViewController {
 
   private lazy var rotors: [UIAccessibilityCustomRotor]? = {
     let favoritesRotor = UIAccessibilityCustomRotor(name: "Favourite POIs") { predicate in
+
       guard
-        // UITableViewCell is set as TargetElement. However `predicate.currentItem.targetElement` cannot be accessed as an UITableViewCell?
-        let accessibilityElement = predicate.currentItem.targetElement as? NSObject,
-        let label = accessibilityElement.accessibilityLabel,
+        /* Notes
+         01. Alternative considered - using UIAccessibility.focusedElement(using:)
+         02. if casted as UIAccessibilityElement is used the test case fails.
+         03. if casted as UITableViewCell always unsuccessful.
+        */
+        let element = predicate.currentItem.targetElement as? NSObject,
+        let label = element.accessibilityLabel,
         let cell = self.tableView.visibleCells.filter({
           return $0.accessibilityLabel == label
         }).first,
@@ -66,14 +71,8 @@ class POIListViewController: UITableViewController {
         else {
           let index = self.objects.index { $0.isFavourite == true }
           let cell = self.tableView.cellForRow(at: IndexPath(row: index!, section: 0))
-
-          defer {
-            // Post Notification 01
-            UIAccessibility.post(notification: UIAccessibility.Notification.layoutChanged, argument: cell)
-          }
-
           return UIAccessibilityCustomRotorItemResult(targetElement: cell!, targetRange: nil)
-      }
+        }
 
       let nextIndex: Int?
 
@@ -103,10 +102,7 @@ class POIListViewController: UITableViewController {
         let cellToBeFocused = self.tableView.cellForRow(at: IndexPath(row: next, section: 0))
         else { return nil }
 
-      defer {
-        // Post Notification 02
-        UIAccessibility.post(notification: UIAccessibility.Notification.layoutChanged, argument: cellToBeFocused)
-      }
+      UIAccessibility.post(notification: UIAccessibility.Notification.layoutChanged, argument: cellToBeFocused)
       return UIAccessibilityCustomRotorItemResult(targetElement: cellToBeFocused, targetRange: nil)
     }
     return [favoritesRotor]
